@@ -1,27 +1,26 @@
 # Use official Ubuntu base image
 FROM ubuntu:20.04
 
-# Avoid interactive prompts during install
+# Avoid interactive prompts during installs
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update packages and install necessary tools
+# Install Apache, Git, Curl
 RUN apt-get update && \
     apt-get install -y apache2 git curl && \
     apt-get clean
 
-# Add ServerName to avoid Apache startup warning
+# Prevent Apache startup warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Add startup script to dynamically clone repo and start Apache
+# Copy custom startup script
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
-CMD ["/start.sh"]
-# Copy custom index.html into Apache's web root
-COPY ./webapp /var/www/html
 
-# Expose port 80 for web access
+# Copy your static web content if you want to bundle it (optional)
+COPY ./webapp/ /var/www/html/
+
+# Expose Apache port
 EXPOSE 80
 
-# Run Apache in foreground and dynamically pull latest content
-CMD ["apachectl", "-D", "FOREGROUND"]
+# Launch custom script on container startup
 CMD ["/start.sh"]
