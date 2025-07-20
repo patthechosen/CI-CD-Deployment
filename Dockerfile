@@ -24,3 +24,4 @@ EXPOSE 80
 
 # Run Apache in foreground and dynamically pull latest content
 CMD ["apachectl", "-D", "FOREGROUND"]
+CMD ["/start.sh"]
