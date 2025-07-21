@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_REPO = "https://github.com/patthechosen/Jenkins.git"
+        GITHUB_REPO = "https://github.com/patthechosen/CI-CD-Deployment.git"
         DOCKERHUB_REPO = "patthechosen/pat_jenkins_apache"
         DOCKERHUB_CREDS = credentials('DockerhubCreds-id')
     }

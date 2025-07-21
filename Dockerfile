@@ -1,26 +1,23 @@
-# Use official Ubuntu base image
-FROM ubuntu:20.04
+# Base Image
+FROM amazonlinux:2
 
-# Avoid interactive prompts during installs
-ENV DEBIAN_FRONTEND=noninteractive
+# Description
+LABEL Description="Dockerfile to containerize an Apache app"
 
-# Install Apache, Git, Curl
-RUN apt-get update && \
-    apt-get install -y apache2 git curl && \
-    apt-get clean
+# Update all packages
+RUN yum -y update
 
-# Prevent Apache startup warning
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+# Install Apache
+RUN yum install -y httpd
 
-# Copy custom startup script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# Copy the app (e.g., index.html) into the container's web directory
+COPY ./webapp /var/www/html/
 
-# Copy your static web content if you want to bundle it (optional)
-COPY ./webapp/ /var/www/html/
-
-# Expose Apache port
+# Expose port 80
 EXPOSE 80
 
-# Launch custom script on container startup
-CMD ["/start.sh"]
+# Start Apache in the foreground
+ENTRYPOINT ["/usr/sbin/httpd"]
+
+# Run the container with Apache in the foreground
+CMD ["-D", "FOREGROUND"]
