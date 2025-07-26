@@ -2,64 +2,62 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_REPO = "https://github.com/patthechosen/CI-CD-Deployment.git"
-        DOCKERHUB_REPO = "patthechosen/pat_jenkins_apache"
+        DOCKERHUB_REPO = 'patthechosen/pat_jenkins_apache'
         DOCKERHUB_CREDS = credentials('DockerhubCreds-id')
     }
 
     stages {
-        stage('Checkout Source') {
+        stage('Source') {
             steps {
-                echo "Cloning repository..."
-                git branch: 'main', credentialsId: 'GithubCredsok', url: "${GITHUB_REPO}"
-                sh 'ls -l'
+                echo 'Checking into GitHub...'
+                git branch: 'main', credentialsId: 'GithubCredsok', url: 'https://github.com/patthechosen/CI-CD-Deployment.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
-                echo "Building Docker image with Apache and custom index.html"
-                sh "docker build -t ${DOCKERHUB_REPO}:v${BUILD_NUMBER} ."
+                echo 'Building the Docker Image...'
+                sh 'docker build -t ${DOCKERHUB_REPO}:v${BUILD_NUMBER} .'
+                sh 'docker images'
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Docker Login') {
             steps {
-                echo "Logging into Docker Hub"
-                sh "echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin"
+                echo 'Logging in to DockerHub...'
+                sh 'docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}'
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                echo "Pushing image to Docker Hub"
-                sh "docker push ${DOCKERHUB_REPO}:v${BUILD_NUMBER}"
+                echo 'Pushing the Docker Image to Docker Hub...'
+                sh 'docker push ${DOCKERHUB_REPO}:v${BUILD_NUMBER}'
             }
         }
 
-        stage('Run Container') {
+        stage('Manual Approval') {
             steps {
-                echo "Launching container with Apache and your GitHub index.html"
-                sh "docker rm -f pat_apache || true"
-                sh "docker run -d -p 80:80 --name pat_apache ${DOCKERHUB_REPO}:v${BUILD_NUMBER}"
-                sh "docker ps -f name=pat_apache"
+                echo 'Waiting for manual approval...'
+                input message: 'Waiting for approval before deployment', ok: 'Deploy'
             }
         }
 
-        stage('Verify Apache') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo "Checking Apache from inside container"
-                script {
-                    def status = sh(
-                        returnStatus: true, 
-                        script: 'docker exec pat_apache curl -s -o /dev/null -w "%{http_code}" http://localhost'
-                    )
-                    if (status == 200) {
-                        echo "✅ Apache inside container is working"
-                    } else {
-                        error "❌ Apache inside container is not responding (HTTP ${status})"
-                    }
-                }
+                echo 'Deploying to Kubernetes...'
+                sh 'kubectl apply -f deployment.yaml'
+            }
+        }
+
+        stage('Destroy Containers') {
+            steps {
+                echo 'stoping and deleting containers...'
+                sh 'docker stop my-apache-app-v${BUILD_NUMBER}'
+                sh 'docker rm my-apache-app-v${BUILD_NUMBER}'    
+                sh 'docker logout'
+            }
+
             }
         }
     }
